@@ -25,6 +25,25 @@ def get_themes(voider=""):
     global themes_list
     themes = sqlite3.connect(r"themes.db")
     cursor = themes.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS themes (
+        name TEXT PRIMARY KEY,
+        bg TEXT,
+        fg TEXT
+    )""")
+    themes_data = [
+        ("Light", "#FFFFFF", "#000000"),
+        ("Dark", "#E1E1E1", "#FFFFFF"),
+        ("Solarized Light", "#FDF6E3", "#1e1e1e"),
+        ("Solarized Dark", "#002B36", "#ffffff")
+    ]
+    for theme in themes_data:
+        name, bg, fg = theme
+        cursor.execute("SELECT 1 FROM themes WHERE name = ?", (name,))
+        if not cursor.fetchone():
+            cursor.execute("INSERT INTO themes (name, bg, fg) VALUES (?, ?, ?)", (name, bg, fg))
+        else: continue
+    themes.commit()
     cursor.execute("SELECT name, bg, fg FROM themes")
     result = cursor.fetchall()
     themes.close()
@@ -50,12 +69,15 @@ def on_closing():
     if not current_text:
         sys.exit(0)
     elif current_text != buffer_text or current_text != "":
-        result = askyesnocancel("Unsaved Changes", "You have unsaved changes. Save before closing?")
-        if result is None:
-            return
-        elif result:
-            if not saving_file():
+        if not (not buffer_text and not file_adress):
+            result = askyesnocancel("Unsaved Changes", "You have unsaved changes. Save before closing?")
+            if result is None:
                 return
+            elif result:
+                if not saving_file():
+                    return
+        else:
+            pass
     sys.exit(0)
 
 def new_file(voider=""):
